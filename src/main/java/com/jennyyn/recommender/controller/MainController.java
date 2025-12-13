@@ -26,26 +26,38 @@ public class MainController {
     }
 
     public void handleRewriteRequest(String text, String mode) {
+        // Check for empty input first
+        if (text == null || text.trim().isEmpty()) {
+            JOptionPane.showMessageDialog(
+                    null,
+                    "Please enter some text before rewriting.",
+                    "Input Error",
+                    JOptionPane.WARNING_MESSAGE
+            );
+            return; // stop further execution
+        }
+
         WritingStrategy strategy;
 
         switch (mode) {
-            case "Creative":
-                strategy = new CreativeStrategy();
-                break;
-            case "Academic":
-                strategy = new AcademicStrategy();
-                break;
-            case "Professional":
-                strategy = new ProfessionalStrategy();
-                break;
-            default:
-                strategy = new CreativeStrategy(); // fallback
+            case "Creative": strategy = new CreativeStrategy(); break;
+            case "Academic": strategy = new AcademicStrategy(); break;
+            case "Professional": strategy = new ProfessionalStrategy(); break;
+            default: strategy = new CreativeStrategy(); // fallback
         }
 
-        RewriteResult result = apiService.rewriteText(text, strategy);
-
-        // update UI
-        mainFrame.displayResult(result.getRewrittenText());
+        try {
+            RewriteResult result = apiService.rewriteText(text, strategy);
+            mainFrame.displayResult(result.getRewrittenText());
+        } catch (Exception e) {
+            // Show an error dialog if API call fails
+            JOptionPane.showMessageDialog(
+                    null,
+                    "Error: Unable to contact API. Please check your internet connection or API key and try again.",
+                    "API Error",
+                    JOptionPane.ERROR_MESSAGE
+            );
+        }
     }
 
     public void handleSaveRequest() {

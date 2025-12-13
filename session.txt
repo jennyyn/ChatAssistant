@@ -33,3 +33,46 @@ There was a dog named Spots.
 In a sun-drenched village painted with the hues of joy, there lived a spirited canine known as Spots. With a coat adorned in a playful patchwork of white and brown, he was more than just a dog; he was a bundle of enthusiasm wrapped in fur, a loyal companion whose heart beat in rhythm with the adventures that awaited him.
 ---SESSION END---
 
+---SESSION START---
+Hello how are you doing today?
+----
+Greetings. I hope this message finds you well. How are you today?
+---SESSION END---
+
+---SESSION START---
+Heyyy prof! hope u doin good 😅 just chillin n tryin to prep for da exam. btw, r we gonna have stuff like integrals n derivatives on it or is it just like normal stuff? also ty 4 all ur help this semester lol 🙏
+
+----
+Subject: Question Regarding Exam Content
+
+Dear Professor,
+
+I hope this message finds you well. I am currently preparing for the upcoming exam and wanted to clarify whether we can expect questions on topics such as integrals and derivatives, or if the exam will primarily focus on standard material. 
+
+Thank you for your support throughout the semester; I appreciate your assistance.
+
+Best regards,  
+[Your Name]
+---SESSION END---
+
+---SESSION START---
+Hello how are you today?
+----
+Subject: Greetings
+
+Dear [Recipient's Name],
+
+I hope this message finds you well today.
+
+Best regards,  
+[Your Name]  
+[Your Position]  
+[Your Company]  
+---SESSION END---
+
+---SESSION START---
+Today is a beautiful day. How was your day?
+----
+It's a lovely day today. How has your day been?
+---SESSION END---
+
