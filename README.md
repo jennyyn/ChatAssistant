@@ -1,6 +1,6 @@
 # Chat
 ## Setup
-1. Clone the repository: `https://github.com/jennyyn/MusicRecommenderSystem.git`
+1. Clone the repository: `https://github.com/jennyyn/ChatAssistant.git`
 2. Get API key from [OpenAI Website](https://platform.openai.com/docs/overview)
 3. `export API_KEY="your=key"`
 5. Run `Main.java`
@@ -17,3 +17,4 @@
 - Observer: UI updates
 
 ## Demo: 
+Assignment #3: https://youtu.be/6pn2SZGxsEI
