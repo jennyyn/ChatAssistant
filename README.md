@@ -11,7 +11,7 @@
 - Academoc writing mode
 - Save/Load sessions
 
-## Design Paterns
+## Design Patterns
 - Strategy: Different writing modes
 - Factory: Request creation
 - Observer: UI updates
