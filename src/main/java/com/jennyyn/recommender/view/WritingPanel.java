@@ -10,6 +10,9 @@ public class WritingPanel extends JPanel {
     private final JTextArea inputArea;
     private final JTextArea outputArea;
     private final JComboBox<String> modeDropdown;
+    private final JLabel spinnerLabel;
+    private final JButton cancelButton;
+    private final JButton rewriteButton;
 
     private MainController controller;
 
@@ -34,26 +37,53 @@ public class WritingPanel extends JPanel {
         modeDropdown = new JComboBox<>(modes);
 
         // ---- Rewrite button ----
-        JButton rewriteButton = new JButton("Rewrite");
+        rewriteButton = new JButton("Rewrite");
         rewriteButton.addActionListener(e -> {
-            String text = inputArea.getText();
-            String mode = (String) modeDropdown.getSelectedItem();
-            controller.handleRewriteRequest(text, mode);
+            if (controller != null) {
+                String text = inputArea.getText();
+                String mode = (String) modeDropdown.getSelectedItem();
+                controller.handleRewriteRequest(text, mode);
+            }
         });
 
-        // ---- Top panel (mode selection + button) ----
+        // ---- Loading indicator ----
+        spinnerLabel = new JLabel("Processing...");
+        spinnerLabel.setVisible(false);
+
+        cancelButton = new JButton("Cancel");
+        cancelButton.setVisible(false);
+        cancelButton.addActionListener(e -> {
+            if (controller != null) controller.handleCancelRequest();
+        });
+
+        //----Top Panel-----
         JPanel topPanel = new JPanel();
-        topPanel.add(new JLabel("Mode:"));
-        topPanel.add(modeDropdown);
-        topPanel.add(rewriteButton);
+        topPanel.setLayout(new BoxLayout(topPanel, BoxLayout.Y_AXIS)); // vertical stack
+
+        JPanel modePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        modePanel.add(new JLabel("Mode:"));
+        modePanel.add(modeDropdown);
+        modePanel.add(rewriteButton);
+
+        JPanel loadingPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        loadingPanel.add(spinnerLabel);
+        loadingPanel.add(cancelButton);
+
+        topPanel.add(modePanel);
+        topPanel.add(loadingPanel);
+
 
         // ---- Bottom right: Save + Load ----
         JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         JButton saveButton = new JButton("Save");
         JButton loadButton = new JButton("Load");
 
-        saveButton.addActionListener(e -> controller.handleSaveRequest());
-        loadButton.addActionListener(e -> controller.handleLoadRequest());
+        saveButton.addActionListener(e -> {
+            if (controller != null) controller.handleSaveRequest();
+        });
+        loadButton.addActionListener(e -> {
+            if (controller != null) controller.handleLoadRequest();
+        });
 
         bottomPanel.add(saveButton);
         bottomPanel.add(loadButton);
@@ -70,11 +100,7 @@ public class WritingPanel extends JPanel {
     }
 
     // shows the session
-    public void showSessionListWindow(
-            String[] options,
-            Runnable onLoad,
-            Runnable onDelete
-    ) {
+    public void showSessionListWindow(String[] options, Runnable onLoad, Runnable onDelete) {
         JDialog dialog = new JDialog((Frame) null, "Session History", true);
         dialog.setSize(400, 300);
         dialog.setLayout(new BorderLayout());
@@ -158,6 +184,16 @@ public class WritingPanel extends JPanel {
 
     public void setOutputText(String text) {
         outputArea.setText(text);
+    }
+
+    // ---- Loading state ----
+    public void showLoadingState(boolean loading) {
+        spinnerLabel.setVisible(loading);
+        cancelButton.setVisible(loading);
+    }
+
+    public void setRewriteEnabled(boolean enabled) {
+        rewriteButton.setEnabled(enabled);
     }
 
 }

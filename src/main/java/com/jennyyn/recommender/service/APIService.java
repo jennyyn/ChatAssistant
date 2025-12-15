@@ -1,6 +1,7 @@
 package com.jennyyn.recommender.service;
 
 import com.jennyyn.recommender.model.APIClient;
+import com.jennyyn.recommender.model.RateLimitException;
 import com.jennyyn.recommender.model.RewriteResult;
 import com.jennyyn.recommender.model.WritingStrategy;
 
@@ -16,16 +17,56 @@ import com.google.gson.JsonParser;
 
 public class APIService {
 
+    private volatile Thread currentRequestThread = null;
+    private volatile boolean cancelRequested = false;
+
     private final APIClient apiClient;
     private final HttpClient httpClient;
+
+    private static final int REQUEST_TIMEOUT_SECONDS = 10; // Timeout for network issues
 
     public APIService() {
         this.apiClient = APIClient.getInstance();
         this.httpClient = apiClient.getHttpClient();
     }
 
+    public void rewriteTextAsync(
+            String originalText,
+            WritingStrategy strategy,
+            java.util.function.Consumer<RewriteResult> onSuccess,
+            java.util.function.Consumer<Exception> onError,
+            Runnable onFinally
+    ) {
+        cancelRequested = false;
+
+        Thread worker = new Thread(() -> {
+            try {
+                if (cancelRequested) return;
+
+                RewriteResult result = rewriteText(originalText, strategy);
+
+                if (!cancelRequested) onSuccess.accept(result);
+
+            } catch (Exception e) {
+                if (!cancelRequested) onError.accept(e);
+            } finally {
+                onFinally.run();
+            }
+        });
+
+        currentRequestThread = worker;
+        worker.start();
+    }
+
+    public void cancel() {
+        cancelRequested = true;
+        if (currentRequestThread != null) {
+            currentRequestThread.interrupt();
+        }
+    }
+
     /*Sends text to OpenAI and returns the rewritten text*/
-    public RewriteResult rewriteText(String originalText, WritingStrategy strategy) throws Exception {
+    private RewriteResult rewriteText(String originalText, WritingStrategy strategy) throws Exception {
         String prompt = strategy.buildPrompt(originalText);
 
         // Build JSON body
@@ -47,10 +88,15 @@ public class APIService {
                 .POST(HttpRequest.BodyPublishers.ofString(json.toString(), StandardCharsets.UTF_8))
                 .build();
 
-        // Send request (throws IOException, InterruptedException)
-        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        if (cancelRequested) throw new InterruptedException("Request cancelled.");
 
-        // Parse response
+        HttpResponse<String> response;
+        try {
+            response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        } catch (Exception e) {
+            throw new Exception("Unable to contact API. Check your internet connection.");
+        }
+
         JsonObject responseJson = JsonParser.parseString(response.body()).getAsJsonObject();
 
         // SUCCESS CASE
@@ -76,8 +122,15 @@ public class APIService {
 
         // API ERROR CASE
         if (responseJson.has("error")) {
-            // DO NOT pass OpenAI error message to UI
-            throw new Exception("Failed to contact API.");
+            JsonObject errorObj = responseJson.getAsJsonObject("error");
+            String errorMsg = errorObj.has("message") ? errorObj.get("message").getAsString() : "Unknown API error";
+
+            // Detect rate-limit from message
+            if (errorMsg.toLowerCase().contains("rate limit")) {
+                throw new RateLimitException("Rate limit exceeded. Please wait a few seconds.");
+            } else {
+                throw new Exception(errorMsg);
+            }
         }
 
         // Unknown response shape

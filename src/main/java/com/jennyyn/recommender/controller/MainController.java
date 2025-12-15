@@ -6,7 +6,7 @@ import com.jennyyn.recommender.service.APIService;
 import com.jennyyn.recommender.service.FileService;
 import com.jennyyn.recommender.view.MainFrame;
 import com.jennyyn.recommender.view.WritingPanel;
-import javax.swing.JOptionPane;
+import javax.swing.*;
 import java.util.List;
 
 
@@ -16,11 +16,6 @@ public class MainController {
     private final MainFrame mainFrame;
     private final WritingPanel writingPanel;
     private final FileService fileService;
-
-    //handling API request limits
-    private long lastApiCall = 0;
-    private static final long MIN_DELAY = 20_000; // 20 seconds
-
 
 
     public MainController(MainFrame mainFrame, WritingPanel writingPanel) {
@@ -42,48 +37,58 @@ public class MainController {
             return; // stop further execution
         }
 
-        // 2. rate limit check BEFORE sending API request
-        long now = System.currentTimeMillis();
-        if (now - lastApiCall < MIN_DELAY) {
-            JOptionPane.showMessageDialog(
-                    null,
-                    "You're sending requests too quickly. Please wait a few seconds.",
-                    "Rate Limit",
-                    JOptionPane.WARNING_MESSAGE
-            );
-            return;
-        }
-        lastApiCall = now; // update the timestamp
-
-        //3. strategy selection
+        //2. strategy selection
         WritingStrategy strategy;
         switch (mode) {
-            case "Creative": strategy = new CreativeStrategy(); break;
-            case "Academic": strategy = new AcademicStrategy(); break;
-            case "Professional": strategy = new ProfessionalStrategy(); break;
-            default: strategy = new CreativeStrategy(); // fallback
+            case "Creative": strategy = new CreativeStrategy();break;
+            case "Academic": strategy = new AcademicStrategy();break;
+            case "Professional": strategy = new ProfessionalStrategy();break;
+            default:
+                strategy = new CreativeStrategy(); // fallback
         }
 
-        try {
-            RewriteResult result = apiService.rewriteText(text, strategy);
-            mainFrame.displayResult(result.getRewrittenText());
+        // 3. Update UI and show processing state
+        SwingUtilities.invokeLater(() -> {
+            writingPanel.showLoadingState(true);
+            writingPanel.setRewriteEnabled(false);
+        });
 
-        } catch (RateLimitException e) {
-            JOptionPane.showMessageDialog(
-                    null,
-                    "You're making too many requests. Wait a few seconds before trying again.",
-                    "API Rate Limit Hit",
-                    JOptionPane.WARNING_MESSAGE
-            );
-        } catch (Exception e) {
-            // Show an error dialog if API call fails
-            JOptionPane.showMessageDialog(
-                    null,
-                    "Error: Unable to contact API. Please check your internet connection or API key and try again.",
-                    "API Error",
-                    JOptionPane.ERROR_MESSAGE
-            );
-        }
+        // 4. Make async API call
+        apiService.rewriteTextAsync(
+                text,
+                strategy,
+
+                // SUCCESS
+                result -> SwingUtilities.invokeLater(() -> {
+                    mainFrame.displayResult(result.getRewrittenText());
+                }),
+
+                // ERROR
+                // ERROR callback
+                error -> SwingUtilities.invokeLater(() -> {
+                    if (error instanceof RateLimitException) {
+                        JOptionPane.showMessageDialog(
+                                null,
+                                "You're sending requests too quickly. Please wait a few seconds.",
+                                "Rate Limit",
+                                JOptionPane.WARNING_MESSAGE
+                        );
+                    } else {
+                        JOptionPane.showMessageDialog(
+                                null,
+                                "Error: Unable to contact API. Please check your internet connection or API key.",
+                                "API Error",
+                                JOptionPane.ERROR_MESSAGE
+                        );
+                    }
+                }),
+
+                // FINALLY callback (always runs)
+                () -> SwingUtilities.invokeLater(() -> {
+                    writingPanel.showLoadingState(false);
+                    writingPanel.setRewriteEnabled(true);
+                })
+        );
     }
 
     public void handleSaveRequest() {
@@ -122,6 +127,15 @@ public class MainController {
                     fileService.deleteSession(selected);
                 }
         );
+
+    }
+
+    public void handleCancelRequest() {
+        apiService.cancel();
+        SwingUtilities.invokeLater(() -> {
+            writingPanel.showLoadingState(false);
+            writingPanel.setRewriteEnabled(true);
+        });
 
     }
 
