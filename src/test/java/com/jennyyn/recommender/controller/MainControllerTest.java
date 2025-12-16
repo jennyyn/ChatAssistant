@@ -56,8 +56,7 @@ class MainControllerTest {
     // 2. Successful rewrite updates UI
     // --------------------------------------------------
     @Test
-    void handleRewriteRequest_success_callsDisplayResult() {
-        // Capture success callback
+    void handleRewriteRequest_success_callsDisplayResult() throws Exception {
         ArgumentCaptor<Consumer<RewriteResult>> successCaptor =
                 ArgumentCaptor.forClass(Consumer.class);
 
@@ -73,6 +72,9 @@ class MainControllerTest {
 
         // Simulate API success
         successCaptor.getValue().accept(new RewriteResult("Rewritten text"));
+
+        // Let the EDT process the invokeLater()
+        SwingUtilities.invokeAndWait(() -> { /* no-op, just flush EDT */ });
 
         verify(mainFrame).displayResult("Rewritten text");
     }

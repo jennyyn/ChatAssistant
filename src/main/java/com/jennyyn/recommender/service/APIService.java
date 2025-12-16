@@ -18,7 +18,7 @@ import com.google.gson.JsonParser;
 public class APIService {
 
     private volatile Thread currentRequestThread = null;
-    private volatile boolean cancelRequested = false;
+    volatile boolean cancelRequested = false;
 
     private final APIClient apiClient;
     private final HttpClient httpClient;
@@ -34,6 +34,10 @@ public class APIService {
     public APIService(APIClient apiClient, HttpClient httpClient) {
         this.apiClient = apiClient;
         this.httpClient = httpClient;
+    }
+
+    boolean isCancelRequested() {
+        return cancelRequested;
     }
 
     public void rewriteTextAsync(
@@ -54,7 +58,9 @@ public class APIService {
                 if (!cancelRequested) onSuccess.accept(result);
 
             } catch (Exception e) {
-                if (!cancelRequested) onError.accept(e);
+                // Always notify the caller of the exception.
+                // The UI can treat InterruptedException as "cancelled".
+                onError.accept(e);
             } finally {
                 onFinally.run();
             }
@@ -72,7 +78,7 @@ public class APIService {
     }
 
     /*Sends text to OpenAI and returns the rewritten text*/
-    private RewriteResult rewriteText(String originalText, WritingStrategy strategy) throws Exception {
+    RewriteResult rewriteText(String originalText, WritingStrategy strategy) throws Exception {
         String prompt = strategy.buildPrompt(originalText);
 
         // Build JSON body

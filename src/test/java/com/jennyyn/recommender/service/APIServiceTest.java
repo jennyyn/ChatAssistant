@@ -19,10 +19,14 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class APIServiceTest {
 
-    @Mock APIClient mockApiClient;
-    @Mock HttpClient mockHttpClient;
-    @Mock WritingStrategy mockStrategy;
-    @Mock HttpResponse<String> mockResponse;
+    @Mock
+    APIClient mockApiClient;
+    @Mock
+    HttpClient mockHttpClient;
+    @Mock
+    WritingStrategy mockStrategy;
+    @Mock
+    HttpResponse<String> mockResponse;
 
     APIService service;
 
@@ -45,7 +49,11 @@ class APIServiceTest {
                 }
                 """;
         when(mockResponse.body()).thenReturn(json);
-        when(mockHttpClient.send(any(), any())).thenReturn(mockResponse);
+        when(mockHttpClient.send(
+                any(java.net.http.HttpRequest.class),
+                any(HttpResponse.BodyHandler.class)
+        )).thenReturn(mockResponse);
+
 
         RewriteResult result = service.rewriteText("Hello", mockStrategy);
 
@@ -62,7 +70,11 @@ class APIServiceTest {
                 }
                 """;
         when(mockResponse.body()).thenReturn(json);
-        when(mockHttpClient.send(any(), any())).thenReturn(mockResponse);
+        when(mockHttpClient.send(
+                any(java.net.http.HttpRequest.class),
+                any(HttpResponse.BodyHandler.class)
+        )).thenReturn(mockResponse);
+
 
         RateLimitException ex = assertThrows(RateLimitException.class,
                 () -> service.rewriteText("Hi", mockStrategy));
@@ -80,7 +92,11 @@ class APIServiceTest {
                 }
                 """;
         when(mockResponse.body()).thenReturn(json);
-        when(mockHttpClient.send(any(), any())).thenReturn(mockResponse);
+        when(mockHttpClient.send(
+                any(java.net.http.HttpRequest.class),
+                any(HttpResponse.BodyHandler.class)
+        )).thenReturn(mockResponse);
+
 
         Exception ex = assertThrows(Exception.class,
                 () -> service.rewriteText("Hi", mockStrategy));
@@ -102,17 +118,22 @@ class APIServiceTest {
     }
 
     @Test
-    void testRewriteTextAsyncCancel() throws InterruptedException {
+    void testRewriteTextAsyncCancel() throws Exception {
         when(mockStrategy.buildPrompt(anyString())).thenReturn("Prompt");
 
-        // Simulate a long-running request
-        doAnswer(invocation -> {
-            Thread.sleep(2000);
+        // Simulate a "blocking" HTTP call that respects interrupt
+        when(mockHttpClient.send(any(), any())).thenAnswer(invocation -> {
+            // Check if current thread is interrupted during sleep
+            try {
+                Thread.sleep(2000);
+            } catch (InterruptedException e) {
+                throw e; // propagate as InterruptedException
+            }
             return mockResponse;
-        }).when(mockHttpClient).send(any(), any());
+        });
 
-        boolean[] errorCalled = {false};
         boolean[] successCalled = {false};
+        boolean[] errorCalled = {false};
 
         service.rewriteTextAsync(
                 "Hi",
@@ -122,12 +143,14 @@ class APIServiceTest {
                 () -> {}
         );
 
-        Thread.sleep(100); // let the async thread start
-        service.cancel();
+        Thread.sleep(100); // let async thread start
+        service.cancel();   // request cancellation
 
-        Thread.sleep(100); // give it a moment to handle cancel
+        Thread.sleep(100); // give async thread time to handle cancel
 
-        assertFalse(successCalled[0]);
-        assertTrue(errorCalled[0]);
+        assertFalse(successCalled[0], "Success callback should NOT be called");
+        assertTrue(errorCalled[0], "Error callback SHOULD be called with InterruptedException");
     }
+
+
 }
