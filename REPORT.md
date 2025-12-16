@@ -34,7 +34,7 @@ Learned: Separating interal error signaling from UI behavior is important
 ### Abstraction
 **Where:** `WritingStrategy` interface  
 
-**Why:** Provides abstraction for text rewriting behavior. The service doesn’t need to know the details of each strategy—it just calls `buildPrompt()` and gets a result. This separates what a strategy does from how it does it.
+**Why:** Provides abstraction for text rewriting behavior. The service doesn’t need to know the details of each strategy, it instead just calls `buildPrompt()` and gets a result. This separates what a strategy does from how it does it.
 
 ### Inheritance
 **Where:** Multiple concrete `WritingStrategy` implementations (`AcademicStrategy`, `ProfessionalStrategy`, `CreativeStrategy`) inheriting from `WritingStrategy`  
