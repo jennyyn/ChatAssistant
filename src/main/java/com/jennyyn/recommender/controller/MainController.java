@@ -80,6 +80,10 @@ public class MainController {
                 // ERROR
                 // ERROR callback
                 error -> SwingUtilities.invokeLater(() -> {
+                    if (error instanceof InterruptedException) {
+                        // User pressed Cancel: do nothing (no popup)
+                        return;
+                    }
                     if (error instanceof RateLimitException) {
                         JOptionPane.showMessageDialog(
                                 null,
