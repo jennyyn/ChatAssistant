@@ -25,6 +25,20 @@ public class MainController {
         this.writingPanel = writingPanel;
     }
 
+    // TESTING CONSTRUCTOR (dependency injection)
+    public MainController(
+            APIService apiService,
+            FileService fileService,
+            MainFrame mainFrame,
+            WritingPanel writingPanel
+    ) {
+        this.apiService = apiService;
+        this.fileService = fileService;
+        this.mainFrame = mainFrame;
+        this.writingPanel = writingPanel;
+    }
+
+
     public void handleRewriteRequest(String text, String mode) {
         // 1. Check for empty input first
         if (text == null || text.trim().isEmpty()) {
